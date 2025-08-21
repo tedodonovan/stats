@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Fossa Tracker">
+    <title>Fossa Possession Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f7f7f7; }
+        h1 { text-align: center; }
+        .timer-section { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
+        .timer { font-size: 2em; }
+        .timer-controls button { padding: 8px 15px; font-size: 0.9em; border-radius: 6px; border: none; background: #ff9800; color: #fff; cursor: pointer; transition: background 0.2s; margin: 0 5px; }
+        .timer-controls button:hover { background: #f57c00; }
+        .halves { text-align: center; margin-bottom: 20px; }
+        .players { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
+        .column-1 { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .column-2 { grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .column-3 { grid-column: 3; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .column-4 { grid-column: 4; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .column-5 { grid-column: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .column-6 { grid-column: 6; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .substitutes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
+        .player-btn { padding: 8px 10px; font-size: 1em; border-radius: 8px; border: none; background: #1976d2; color: #fff; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; height: 80px; position: relative; box-sizing: border-box; }
+        .player-btn:hover { background: #1565c0; transform: scale(1.02); }
+        .player-btn.clicked { background: #4caf50; border: 2px solid #2e7d32; box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
+        .player-btn.clicked:hover { background: #45a049; }
+        .player-btn.substitute { background: #ffc107; color: #000; }
+        .player-btn.substitute:hover { background: #ffb300; }
+        .player-btn.substitute.clicked { background: #8bc34a; color: #fff; border: 2px solid #689f38; box-shadow: 0 0 10px rgba(139, 195, 74, 0.5); }
+        .player-btn.substitute.clicked:hover { background: #7cb342; }
+        .player-btn.dragging { opacity: 0.5; transform: rotate(5deg); }
+        .player-btn.drag-over { border: 3px dashed #333; }
+        .player-number { font-size: 1.3em; font-weight: bold; margin-bottom: 2px; line-height: 1.1; }
+        .player-name { font-size: 0.85em; text-align: center; line-height: 1.2; word-wrap: break-word; overflow: hidden; max-height: 2.4em; }
+        .controls { text-align: center; margin-bottom: 20px; }
+        .controls button { margin: 0 10px; padding: 10px 18px; font-size: 1em; border-radius: 8px; border: none; background: #388e3c; color: #fff; cursor: pointer; transition: background 0.2s; }
+        .controls button:hover { background: #2e7031; }
+        .summary-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+        .summary-content { background: #fff; padding: 30px; border-radius: 10px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .summary-table th, .summary-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .summary-table th { background: #f5f5f5; cursor: pointer; user-select: none; }
+        .summary-table th:hover { background: #e0e0e0; }
+        .summary-table th.sorted-asc::after { content: ' ↑'; }
+        .summary-table th.sorted-desc::after { content: ' ↓'; }
+        .close-summary { float: right; cursor: pointer; font-size: 1.2em; color: #888; }
+        .close-summary:hover { color: #000; }
+        .manage-players-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+        .manage-players-content { background: #fff; padding: 30px; border-radius: 10px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .players-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .players-table th, .players-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .players-table th { background: #f5f5f5; }
+        .players-table input { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .players-table tr { cursor: move; transition: background-color 0.2s; }
+        .players-table tr:hover { background-color: #f9f9f9; }
+        .players-table tr.dragging { opacity: 0.5; background-color: #e3f2fd; }
+        .players-table tr.drag-over { border-top: 3px solid #1976d2; }
+        .players-table tr.substitute-separator { border-top: 4px solid #ff6b35; }
+        .players-table tr.substitute-separator td { border-bottom: none; padding: 5px 10px; }
+        .players-table tr.substitute-separator td:first-child { position: relative; }
+        .players-table tr.substitute-separator td:first-child::before { content: "SUBSTITUTES"; position: absolute; top: -18px; left: 0; background: #ff6b35; color: white; padding: 2px 8px; font-size: 0.8em; font-weight: bold; border-radius: 3px; }
+        .delete-btn { background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .delete-btn:hover { background: #c62828; }
+        .add-player-btn { background: #1976d2; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-bottom: 15px; }
+        .add-player-btn:hover { background: #1565c0; }
+        .save-players-btn { background: #388e3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-bottom: 15px; }
+        .save-players-btn:hover { background: #2e7031; }
+        .clear-btn { background: #d32f2f; }
+        .clear-btn:hover { background: #c62828; }
+        .time-input { padding: 8px; font-size: 0.9em; border: 1px solid #ddd; border-radius: 4px; width: 80px; text-align: center; }
+        .set-time-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+        .set-time-content { background: #fff; padding: 30px; border-radius: 10px; min-width: 300px; text-align: center; }
+        .set-time-content h3 { margin-top: 0; }
+        .set-time-input { padding: 10px; font-size: 1.2em; border: 1px solid #ddd; border-radius: 4px; width: 120px; text-align: center; margin: 15px 0; }
+        .set-time-buttons { margin-top: 20px; }
+        .set-time-buttons button { margin: 0 10px; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .confirm-time-btn { background: #388e3c; color: white; }
+        .confirm-time-btn:hover { background: #2e7031; }
+        .cancel-time-btn { background: #d32f2f; color: white; }
+        .cancel-time-btn:hover { background: #c62828; }
+        @media (max-width: 600px) {
+            .players { grid-template-columns: repeat(3, 1fr); max-width: 100%; }
+            .column-1, .column-2, .column-3, .column-4, .column-5, .column-6 { grid-column: auto; }
+            .substitutes { flex-direction: row; justify-content: center; max-width: 100%; }
+            .manage-players-content { margin: 20px; max-width: calc(100vw - 40px); }
+            .timer-section { flex-direction: column; gap: 10px; }
+        }
+        @media (max-width: 1024px) and (min-width: 601px) {
+            /* iPad-specific styles */
+            .players { max-width: 95%; }
+            .substitutes { max-width: 95%; }
+            .player-btn { width: 120px; height: 70px; font-size: 0.9em; }
+            .player-number { font-size: 1.2em; }
+            .player-name { font-size: 0.8em; }
+            .summary-content { max-width: 90vw; }
+            .manage-players-content { max-width: 90vw; }
+        }
+        @media (max-width: 1366px) and (orientation: landscape) {
+            /* iPad landscape optimization */
+            .players { max-width: 100%; }
+            .substitutes { max-width: 100%; }
+        }
+        /* Touch-friendly improvements */
+        @media (pointer: coarse) {
+            .player-btn { 
+                min-height: 44px; /* Apple's minimum touch target */
+                transition: all 0.2s ease;
+            }
+            .player-btn:active {
+                transform: scale(0.95);
+                background: #1565c0;
+            }
+            .player-btn.substitute:active {
+                background: #ffb300;
+            }
+            .timer-controls button, .controls button {
+                min-height: 44px;
+                padding: 12px 20px;
+            }
+            .summary-table th, .summary-table td {
+                padding: 12px;
+            }
+            .players-table th, .players-table td {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Fossa Possession Tracker</h1>
+    <div class="timer-section">
+        <div class="timer-controls">
+            <button id="startBtn">Start</button>
+            <button id="stopBtn">Stop</button>
+        </div>
+        <div class="timer" id="timer">00:00</div>
+        <div class="timer-controls">
+            <button id="resetClockBtn">Reset Clock</button>
+            <button id="setTimeBtn">Set Time</button>
+        </div>
+    </div>
+    <div class="halves">
+        <button id="firstHalfBtn">First Half</button>
+        <button id="secondHalfBtn">Second Half</button>
+        <span id="currentHalf">Current Half: 1</span>
+    </div>
+    <div class="players" id="players">
+        <div class="column-1" id="column-1"></div>
+        <div class="column-2" id="column-2"></div>
+        <div class="column-3" id="column-3"></div>
+        <div class="column-4" id="column-4"></div>
+        <div class="column-5" id="column-5"></div>
+        <div class="column-6" id="column-6"></div>
+    </div>
+    <div class="substitutes" id="substitutes"></div>
+    <div class="controls">
+        <button id="downloadBtn">Download Data</button>
+        <button id="summaryBtn">Summary</button>
+        <button id="managePlayersBtn">Manage Players</button>
+        <button id="clearPossessionsBtn" class="clear-btn">Clear Possessions</button>
+    </div>
+    <div class="summary-modal" id="summaryModal">
+        <div class="summary-content">
+            <span class="close-summary" id="closeSummary">&times;</span>
+            <h2>Possession Summary</h2>
+            <div style="margin-bottom: 15px;">
+                <label for="halfFilter" style="margin-right: 10px; font-weight: bold;">Filter by Half:</label>
+                <select id="halfFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 20px;">
+                    <option value="both">Both Halves</option>
+                    <option value="1">First Half</option>
+                    <option value="2">Second Half</option>
+                </select>
+                <label for="timeFilter" style="margin-right: 10px; font-weight: bold;">Last X Minutes:</label>
+                <select id="timeFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="all">All</option>
+                    <option value="30">30 minutes</option>
+                    <option value="25">25 minutes</option>
+                    <option value="20">20 minutes</option>
+                    <option value="15">15 minutes</option>
+                    <option value="10">10 minutes</option>
+                    <option value="5">5 minutes</option>
+                </select>
+            </div>
+            <table class="summary-table" id="summaryTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortSummary('number')">Number</th>
+                        <th onclick="sortSummary('name')">Name</th>
+                        <th onclick="sortSummary('possessions')">Possessions</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="manage-players-modal" id="managePlayersModal">
+        <div class="manage-players-content">
+            <span class="close-summary" id="closeManagePlayers">&times;</span>
+            <h2>Manage Players</h2>
+            <table class="players-table" id="playersTable">
+                <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Name</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="playersTableBody">
+                </tbody>
+            </table>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="add-player-btn" onclick="addPlayer()">Add New Player</button>
+                <button class="save-players-btn" id="savePlayersBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    <div class="set-time-modal" id="setTimeModal">
+        <div class="set-time-content">
+            <h3>Set Game Time</h3>
+            <input type="text" class="set-time-input" id="setTimeInput" placeholder="mm:ss" maxlength="5">
+            <div class="set-time-buttons">
+                <button class="confirm-time-btn" id="confirmTimeBtn">Set Time</button>
+                <button class="cancel-time-btn" id="cancelTimeBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // --- CONFIG ---
+        let players = [
+            { number: 1, name: "Player 1" },
+            { number: 2, name: "Player 2" },
+            { number: 3, name: "Player 3" },
+            { number: 4, name: "Player 4" },
+            { number: 5, name: "Player 5" },
+            { number: 6, name: "Player 6" },
+            { number: 7, name: "Player 7" },
+            { number: 8, name: "Player 8" },
+            { number: 9, name: "Player 9" },
+            { number: 10, name: "Player 10" },
+            { number: 11, name: "Player 11" },
+            { number: 12, name: "Player 12" },
+            { number: 13, name: "Player 13" },
+            { number: 14, name: "Player 14" },
+            { number: 15, name: "Player 15" }
+        ];
+
+        // Load players from localStorage if available
+        function loadPlayers() {
+            const savedPlayers = localStorage.getItem('players');
+            if (savedPlayers) {
+                players = JSON.parse(savedPlayers);
+            }
+        }
+
+        // Save players to localStorage
+        function savePlayers() {
+            localStorage.setItem('players', JSON.stringify(players));
+        }
+        // --- TIMER ---
+        let timer = 0;
+        let interval = null;
+        let running = false;
+        let currentHalf = 1;
+        function updateTimerDisplay() {
+            const mins = String(Math.floor(timer / 60)).padStart(2, '0');
+            const secs = String(timer % 60).padStart(2, '0');
+            document.getElementById('timer').textContent = `${mins}:${secs}`;
+        }
+        function startTimer() {
+            if (!running) {
+                interval = setInterval(() => {
+                    timer++;
+                    updateTimerDisplay();
+                }, 1000);
+                running = true;
+            }
+        }
+        function stopTimer() {
+            if (running) {
+                clearInterval(interval);
+                running = false;
+            }
+        }
+        function setHalf(half) {
+            currentHalf = half;
+            document.getElementById('currentHalf').textContent = `Current Half: ${half}`;
+            // Don't reset timer or stop it when changing halves
+        }
+        
+        function resetClock() {
+            timer = 0;
+            updateTimerDisplay();
+            stopTimer();
+        }
+
+        function setTime() {
+            document.getElementById('setTimeModal').style.display = 'flex';
+            document.getElementById('setTimeInput').focus();
+        }
+
+        function confirmSetTime() {
+            const timeInput = document.getElementById('setTimeInput');
+            const timeValue = timeInput.value.trim();
+            
+            // Validate format (mm:ss)
+            const timeRegex = /^(\d{1,2}):(\d{2})$/;
+            const match = timeValue.match(timeRegex);
+            
+            if (match) {
+                const minutes = parseInt(match[1]);
+                const seconds = parseInt(match[2]);
+                
+                if (seconds < 60) {
+                    timer = (minutes * 60) + seconds;
+                    updateTimerDisplay();
+                    hideSetTimeModal();
+                } else {
+                    alert('Seconds must be less than 60');
+                }
+            } else {
+                alert('Please enter time in mm:ss format (e.g., 15:30)');
+            }
+        }
+
+        function hideSetTimeModal() {
+            document.getElementById('setTimeModal').style.display = 'none';
+            document.getElementById('setTimeInput').value = '';
+        }
+        // --- POSSESSION TRACKING ---
+        function savePossession(jersey) {
+            const now = new Date();
+            const time = now.toISOString();
+            const data = { time, jersey, half: currentHalf, timer: timer };
+            let possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            possessions.push(data);
+            localStorage.setItem('possessions', JSON.stringify(possessions));
+            
+            // Add visual feedback - find the button and add clicked class
+            const allButtons = document.querySelectorAll('.player-btn');
+            allButtons.forEach(btn => {
+                if (btn.querySelector('.player-number').textContent == jersey) {
+                    btn.classList.add('clicked');
+                    // Remove the clicked class after 1 second
+                    setTimeout(() => {
+                        btn.classList.remove('clicked');
+                    }, 1000);
+                }
+            });
+        }
+        // --- PLAYER BUTTONS ---
+        function renderPlayers() {
+            // Clear all columns
+            for (let i = 1; i <= 6; i++) {
+                const column = document.getElementById(`column-${i}`);
+                if (column) column.innerHTML = '';
+            }
+            
+            const subsContainer = document.getElementById('substitutes');
+            subsContainer.innerHTML = '';
+            
+            // Define column capacities: [1, 3, 3, 2, 3, 3] = 15 total
+            const columnCapacities = [1, 3, 3, 2, 3, 3];
+            const columnContainers = [
+                document.getElementById('column-1'),
+                document.getElementById('column-2'),
+                document.getElementById('column-3'),
+                document.getElementById('column-4'),
+                document.getElementById('column-5'),
+                document.getElementById('column-6')
+            ];
+            
+            let playerIndex = 0;
+            
+            // Fill main players (first 15) into columns top-down
+            for (let col = 0; col < columnCapacities.length && playerIndex < Math.min(players.length, 15); col++) {
+                const capacity = columnCapacities[col];
+                const container = columnContainers[col];
+                
+                // Special case for column 1: add empty space at top, player in second position
+                if (col === 0) {
+                    // Add empty spacer div
+                    const spacer = document.createElement('div');
+                    spacer.style.height = '80px'; // Same height as player button
+                    spacer.style.width = '140px'; // Same width as player button
+                    container.appendChild(spacer);
+                }
+                
+                for (let pos = 0; pos < capacity && playerIndex < Math.min(players.length, 15); pos++) {
+                    const p = players[playerIndex];
+                    const btn = createPlayerButton(p, playerIndex);
+                    container.appendChild(btn);
+                    playerIndex++;
+                }
+            }
+            
+            // Handle substitutes (>15) in rows of max 6
+            let subsRowContainer = null;
+            let subsInCurrentRow = 0;
+            const maxSubsPerRow = 6;
+            
+            for (let i = 15; i < players.length; i++) {
+                if (subsInCurrentRow === 0) {
+                    // Create new row container
+                    subsRowContainer = document.createElement('div');
+                    subsRowContainer.style.display = 'flex';
+                    subsRowContainer.style.gap = '10px';
+                    subsRowContainer.style.justifyContent = 'flex-start';
+                    subsRowContainer.style.width = '100%';
+                    subsContainer.appendChild(subsRowContainer);
+                }
+                
+                const p = players[i];
+                const btn = createPlayerButton(p, i);
+                subsRowContainer.appendChild(btn);
+                
+                subsInCurrentRow++;
+                if (subsInCurrentRow >= maxSubsPerRow) {
+                    subsInCurrentRow = 0;
+                }
+            }
+        }
+        
+        function createPlayerButton(player, index) {
+            const btn = document.createElement('button');
+            btn.className = index < 15 ? 'player-btn' : 'player-btn substitute';
+            btn.draggable = true;
+            btn.dataset.playerIndex = index;
+            btn.innerHTML = `
+                <div class="player-number">${player.number}</div>
+                <div class="player-name">${player.name}</div>
+            `;
+            
+            // Add click handler for possession tracking
+            btn.onclick = (e) => {
+                if (!e.target.closest('.player-btn').classList.contains('dragging')) {
+                    savePossession(player.number);
+                }
+            };
+            
+            // Add drag event listeners
+            btn.addEventListener('dragstart', handleDragStart);
+            btn.addEventListener('dragover', handleDragOver);
+            btn.addEventListener('drop', handleDrop);
+            btn.addEventListener('dragend', handleDragEnd);
+            
+            return btn;
+        }
+
+        // --- DRAG AND DROP FUNCTIONALITY ---
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                const draggedIndex = parseInt(draggedElement.dataset.playerIndex);
+                const targetIndex = parseInt(this.dataset.playerIndex);
+                
+                // Swap players in the array
+                [players[draggedIndex], players[targetIndex]] = [players[targetIndex], players[draggedIndex]];
+                
+                // Save the new order
+                savePlayers();
+                
+                // Re-render the players
+                renderPlayers();
+            }
+
+            this.classList.remove('drag-over');
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            // Clean up any remaining drag-over classes
+            document.querySelectorAll('.player-btn').forEach(btn => {
+                btn.classList.remove('drag-over');
+            });
+        }
+        // --- DOWNLOAD DATA ---
+        function downloadData() {
+            const possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            let csv = 'timestamp,jersey,half,timer\n';
+            possessions.forEach(d => {
+                csv += `${d.time},${d.jersey},${d.half},${d.timer}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'possessions.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        // --- SUMMARY ---
+        let summarySort = { column: null, direction: null };
+
+        function showSummary() {
+            // Reset sort to default (manage players order) every time summary is opened
+            summarySort = { column: null, direction: null };
+            // Reset half filter to "both" every time summary is opened
+            document.getElementById('halfFilter').value = 'both';
+            // Reset time filter to "all" every time summary is opened
+            document.getElementById('timeFilter').value = 'all';
+            renderSummaryTable();
+            document.getElementById('summaryModal').style.display = 'flex';
+        }
+
+        function renderSummaryTable() {
+            const possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            const halfFilter = document.getElementById('halfFilter').value;
+            const timeFilter = document.getElementById('timeFilter').value;
+            
+            // Filter possessions by selected half
+            let filteredPossessions = halfFilter === 'both' 
+                ? possessions 
+                : possessions.filter(p => p.half && p.half.toString() === halfFilter);
+            
+            // Filter by time if not "all"
+            if (timeFilter !== 'all') {
+                const timeFilterMinutes = parseInt(timeFilter);
+                const timeFilterSeconds = timeFilterMinutes * 60;
+                
+                if (halfFilter === 'both') {
+                    // For both halves, get max timer value for each half
+                    const half1Max = Math.max(0, ...filteredPossessions
+                        .filter(p => p.half === 1)
+                        .map(p => p.timer || 0));
+                    const half2Max = Math.max(0, ...filteredPossessions
+                        .filter(p => p.half === 2)
+                        .map(p => p.timer || 0));
+                    
+                    filteredPossessions = filteredPossessions.filter(p => {
+                        if (p.half === 1) {
+                            return (p.timer || 0) >= (half1Max - timeFilterSeconds);
+                        } else if (p.half === 2) {
+                            return (p.timer || 0) >= (half2Max - timeFilterSeconds);
+                        }
+                        return true;
+                    });
+                } else {
+                    // For single half, get max timer value and filter
+                    const maxTimer = Math.max(0, ...filteredPossessions.map(p => p.timer || 0));
+                    filteredPossessions = filteredPossessions.filter(p => 
+                        (p.timer || 0) >= (maxTimer - timeFilterSeconds)
+                    );
+                }
+            }
+            
+            const counts = {};
+            players.forEach(p => counts[p.number] = 0);
+            filteredPossessions.forEach(d => {
+                if (counts[d.jersey] !== undefined) counts[d.jersey]++;
+            });
+
+            // Create array with possession data maintaining the order from manage players screen
+            const summaryData = players.map((player, index) => ({
+                number: player.number,
+                name: player.name,
+                possessions: counts[player.number] || 0,
+                originalOrder: index
+            }));
+
+            // Sort based on current sort settings, but default to manage players order
+            if (summarySort.column && summarySort.column !== 'order') {
+                summaryData.sort((a, b) => {
+                    let aVal = a[summarySort.column];
+                    let bVal = b[summarySort.column];
+                    
+                    if (summarySort.column === 'number' || summarySort.column === 'possessions') {
+                        aVal = Number(aVal);
+                        bVal = Number(bVal);
+                    }
+                    
+                    if (summarySort.direction === 'asc') {
+                        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                    } else {
+                        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                    }
+                });
+            } else {
+                // Default to manage players order (no sorting applied)
+                summaryData.sort((a, b) => a.originalOrder - b.originalOrder);
+            }
+
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = '';
+            
+            summaryData.forEach(player => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${player.number}</td>
+                    <td>${player.name}</td>
+                    <td>${player.possessions}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update sort indicators
+            document.querySelectorAll('.summary-table th').forEach(th => {
+                th.className = '';
+            });
+            const sortedHeader = document.querySelector(`[onclick="sortSummary('${summarySort.column}')"]`);
+            if (sortedHeader) {
+                sortedHeader.className = `sorted-${summarySort.direction}`;
+            }
+        }
+
+        function sortSummary(column) {
+            if (summarySort.column === column) {
+                summarySort.direction = summarySort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                summarySort.column = column;
+                summarySort.direction = column === 'possessions' ? 'desc' : 'asc'; // Default possessions to descending
+            }
+            renderSummaryTable();
+        }
+
+        function hideSummary() {
+            document.getElementById('summaryModal').style.display = 'none';
+        }
+
+        // --- PLAYER MANAGEMENT ---
+        function showManagePlayers() {
+            renderPlayerManagement();
+            document.getElementById('managePlayersModal').style.display = 'flex';
+        }
+
+        function hideManagePlayers() {
+            document.getElementById('managePlayersModal').style.display = 'none';
+        }
+
+        function renderPlayerManagement() {
+            const tbody = document.getElementById('playersTableBody');
+            
+            tbody.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const row = document.createElement('tr');
+                row.draggable = true;
+                row.dataset.playerIndex = index;
+                
+                // Add separator class for the 16th player (index 15) to show substitutes start
+                if (index === 15 && players.length > 15) {
+                    row.classList.add('substitute-separator');
+                }
+                
+                row.innerHTML = `
+                    <td><input type="number" value="${player.number}" data-index="${index}" data-field="number"></td>
+                    <td><input type="text" value="${player.name}" data-index="${index}" data-field="name"></td>
+                    <td><button class="delete-btn" onclick="removePlayer(${index})">Delete</button></td>
+                `;
+                
+                // Add drag event listeners to the row
+                row.addEventListener('dragstart', handleTableDragStart);
+                row.addEventListener('dragover', handleTableDragOver);
+                row.addEventListener('drop', handleTableDrop);
+                row.addEventListener('dragend', handleTableDragEnd);
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // --- TABLE DRAG AND DROP FUNCTIONALITY ---
+        let draggedTableRow = null;
+
+        function handleTableDragStart(e) {
+            draggedTableRow = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        }
+
+        function handleTableDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleTableDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedTableRow !== this) {
+                const draggedIndex = parseInt(draggedTableRow.dataset.playerIndex);
+                const targetIndex = parseInt(this.dataset.playerIndex);
+                
+                // Move player to new position
+                const movedPlayer = players.splice(draggedIndex, 1)[0];
+                players.splice(targetIndex, 0, movedPlayer);
+                
+                // Re-render the table with new order
+                renderPlayerManagement();
+            }
+
+            this.classList.remove('drag-over');
+            return false;
+        }
+
+        function handleTableDragEnd(e) {
+            this.classList.remove('dragging');
+            // Clean up any remaining drag-over classes
+            document.querySelectorAll('.players-table tr').forEach(row => {
+                row.classList.remove('drag-over');
+            });
+        }
+
+        function addPlayer() {
+            // Find the next available number
+            const existingNumbers = players.map(p => p.number);
+            let nextNumber = 1;
+            while (existingNumbers.includes(nextNumber)) {
+                nextNumber++;
+            }
+            
+            // Add new player
+            players.push({
+                number: nextNumber,
+                name: `Player ${nextNumber}`
+            });
+            
+            renderPlayerManagement();
+        }
+
+        function removePlayer(index) {
+            if (players.length <= 1) {
+                alert('You must have at least one player.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to remove ${players[index].name}?`)) {
+                players.splice(index, 1);
+                renderPlayerManagement();
+            }
+        }
+
+        function savePlayerChanges() {
+            const inputs = document.querySelectorAll('#playersTableBody input');
+            inputs.forEach(input => {
+                const index = parseInt(input.dataset.index);
+                const field = input.dataset.field;
+                if (field === 'number') {
+                    players[index].number = parseInt(input.value) || 1;
+                } else {
+                    players[index].name = input.value || `Player ${players[index].number}`;
+                }
+            });
+            savePlayers();
+            renderPlayers();
+            hideManagePlayers();
+        }
+
+        function getPossessionCounts() {
+            const possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            const counts = {};
+            players.forEach(p => counts[p.number] = 0);
+            possessions.forEach(d => {
+                if (counts[d.jersey] !== undefined) counts[d.jersey]++;
+            });
+            return counts;
+        }
+
+        // --- CLEAR POSSESSIONS ---
+        function clearPossessions() {
+            if (confirm('Are you sure you want to clear all possession data? This cannot be undone.')) {
+                localStorage.removeItem('possessions');
+                alert('Possession data cleared!');
+            }
+        }
+        // --- EVENT LISTENERS ---
+        document.getElementById('startBtn').onclick = startTimer;
+        document.getElementById('stopBtn').onclick = stopTimer;
+        document.getElementById('resetClockBtn').onclick = resetClock;
+        document.getElementById('setTimeBtn').onclick = setTime;
+        document.getElementById('confirmTimeBtn').onclick = confirmSetTime;
+        document.getElementById('cancelTimeBtn').onclick = hideSetTimeModal;
+        document.getElementById('firstHalfBtn').onclick = () => setHalf(1);
+        document.getElementById('secondHalfBtn').onclick = () => setHalf(2);
+        document.getElementById('downloadBtn').onclick = downloadData;
+        document.getElementById('summaryBtn').onclick = showSummary;
+        document.getElementById('managePlayersBtn').onclick = showManagePlayers;
+        document.getElementById('clearPossessionsBtn').onclick = clearPossessions;
+        document.getElementById('closeSummary').onclick = hideSummary;
+        document.getElementById('closeManagePlayers').onclick = hideManagePlayers;
+        document.getElementById('savePlayersBtn').onclick = savePlayerChanges;
+        
+        // Allow Enter key to confirm set time
+        document.getElementById('setTimeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmSetTime();
+            }
+        });
+        
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('summaryModal')) hideSummary();
+            if (event.target === document.getElementById('managePlayersModal')) hideManagePlayers();
+            if (event.target === document.getElementById('setTimeModal')) hideSetTimeModal();
+        };
+        // --- INIT ---
+        loadPlayers();
+        renderPlayers();
+        updateTimerDisplay();
+    </script>
+</body>
+</html>
