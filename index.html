@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Fossa Tracker">
+    <meta name="format-detection" content="telephone=no"
     <title>Fossa Possession Tracker</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 30px; background: #f7f7f7; }
@@ -38,26 +39,88 @@
         .controls { text-align: center; margin-bottom: 20px; }
         .controls button { margin: 0 10px; padding: 10px 18px; font-size: 1em; border-radius: 8px; border: none; background: #388e3c; color: #fff; cursor: pointer; transition: background 0.2s; }
         .controls button:hover { background: #2e7031; }
-        .summary-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
-        .summary-content { background: #fff; padding: 30px; border-radius: 10px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        /* Side panel styles */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: -400px; /* Start off-screen */
+            width: 400px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .side-panel.active {
+            right: 0;
+        }
+        
+        .summary-panel {
+            display: block;
+        }
+        
+        .manage-players-panel {
+            display: block;
+        }
+        
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.2);
+            z-index: 999;
+            display: none;
+        }
+        
+        .panel-overlay.active {
+            display: block;
+        }
+        
         .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .summary-table th, .summary-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         .summary-table th { background: #f5f5f5; cursor: pointer; user-select: none; }
         .summary-table th:hover { background: #e0e0e0; }
         .summary-table th.sorted-asc::after { content: ' ↑'; }
         .summary-table th.sorted-desc::after { content: ' ↓'; }
-        .close-summary { float: right; cursor: pointer; font-size: 1.2em; color: #888; }
-        .close-summary:hover { color: #000; }
-        .manage-players-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
-        .manage-players-content { background: #fff; padding: 30px; border-radius: 10px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .close-panel { float: right; cursor: pointer; font-size: 1.2em; color: #888; margin-bottom: 15px; }
+        .close-panel:hover { color: #000; }
         .players-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .players-table th, .players-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         .players-table th { background: #f5f5f5; }
         .players-table input { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
-        .players-table tr { cursor: move; transition: background-color 0.2s; }
+        .players-table tr { 
+            cursor: move; 
+            transition: background-color 0.2s; 
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            position: relative;
+        }
+        .players-table tr::before {
+            content: "≡";
+            position: absolute;
+            left: -15px;
+            font-size: 18px;
+            color: #aaa;
+            opacity: 0.8;
+        }
         .players-table tr:hover { background-color: #f9f9f9; }
-        .players-table tr.dragging { opacity: 0.5; background-color: #e3f2fd; }
-        .players-table tr.drag-over { border-top: 3px solid #1976d2; }
+        .players-table tr.dragging { 
+            opacity: 0.5; 
+            background-color: #e3f2fd; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: 2px dashed #1976d2;
+        }
+        .players-table tr.drag-over { 
+            border-top: 3px solid #1976d2; 
+            background-color: rgba(25, 118, 210, 0.1);
+        }
         .players-table tr.substitute-separator { border-top: 4px solid #ff6b35; }
         .players-table tr.substitute-separator td { border-bottom: none; padding: 5px 10px; }
         .players-table tr.substitute-separator td:first-child { position: relative; }
@@ -85,8 +148,13 @@
             .players { grid-template-columns: repeat(3, 1fr); max-width: 100%; }
             .column-1, .column-2, .column-3, .column-4, .column-5, .column-6 { grid-column: auto; }
             .substitutes { flex-direction: row; justify-content: center; max-width: 100%; }
-            .manage-players-content { margin: 20px; max-width: calc(100vw - 40px); }
             .timer-section { flex-direction: column; gap: 10px; }
+            
+            /* Side panel adjustments for mobile */
+            .side-panel {
+                width: 85%;
+                right: -85%;
+            }
         }
         @media (max-width: 1024px) and (min-width: 601px) {
             /* iPad-specific styles */
@@ -95,19 +163,71 @@
             .player-btn { width: 120px; height: 70px; font-size: 0.9em; }
             .player-number { font-size: 1.2em; }
             .player-name { font-size: 0.8em; }
-            .summary-content { max-width: 90vw; }
-            .manage-players-content { max-width: 90vw; }
+            
+            /* Side panel adjustments for tablet */
+            .side-panel {
+                width: 350px;
+                right: -350px;
+            }
         }
         @media (max-width: 1366px) and (orientation: landscape) {
             /* iPad landscape optimization */
             .players { max-width: 100%; }
             .substitutes { max-width: 100%; }
         }
+        
+        /* iOS Safari specific styles */
+        @supports (-webkit-touch-callout: none) {
+            .player-btn {
+                position: relative;
+            }
+            
+            /* Add visual cue about dragging ability */
+            .player-btn::after {
+                content: "Hold to move";
+                position: absolute;
+                bottom: -18px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.6);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 10px;
+                font-size: 9px;
+                opacity: 0;
+                transition: opacity 0.3s;
+                pointer-events: none;
+                white-space: nowrap;
+                z-index: 10;
+            }
+            
+            /* Show tip on first page load */
+            body:not(.tips-shown) .player-btn:nth-child(1)::after {
+                opacity: 0.9;
+                animation: fadeInOut 3s forwards;
+            }
+            
+            @keyframes fadeInOut {
+                0% { opacity: 0; }
+                20% { opacity: 0.9; }
+                80% { opacity: 0.9; }
+                100% { opacity: 0; }
+            }
+            
+            /* Custom scrolling behavior for iOS */
+            .summary-content, .manage-players-content {
+                -webkit-overflow-scrolling: touch;
+            }
+        }
         /* Touch-friendly improvements */
         @media (pointer: coarse) {
             .player-btn { 
-                min-height: 44px; /* Apple's minimum touch target */
+                min-height: 60px; /* Increased from Apple's minimum touch target */
+                min-width: 100px;
                 transition: all 0.2s ease;
+                -webkit-user-select: none; /* Safari */
+                user-select: none;
+                -webkit-touch-callout: none; /* Disable iOS callout on long-press */
             }
             .player-btn:active {
                 transform: scale(0.95);
@@ -125,6 +245,26 @@
             }
             .players-table th, .players-table td {
                 padding: 12px;
+            }
+            /* Improve drag handles visibility on touch devices */
+            .player-btn.is-dragging {
+                opacity: 0.8;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                border: 2px dashed #1976d2;
+            }
+            .player-btn.drag-over {
+                border: 3px dashed #ff9800;
+                background-color: rgba(255, 152, 0, 0.2);
+            }
+            /* Improved touch feedback */
+            .player-btn::before {
+                content: '⬍';
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                font-size: 14px;
+                opacity: 0.7;
+                color: inherit;
             }
         }
     </style>
@@ -162,60 +302,62 @@
         <button id="managePlayersBtn">Manage Players</button>
         <button id="clearPossessionsBtn" class="clear-btn">Clear Possessions</button>
     </div>
-    <div class="summary-modal" id="summaryModal">
-        <div class="summary-content">
-            <span class="close-summary" id="closeSummary">&times;</span>
-            <h2>Possession Summary</h2>
-            <div style="margin-bottom: 15px;">
-                <label for="halfFilter" style="margin-right: 10px; font-weight: bold;">Filter by Half:</label>
-                <select id="halfFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 20px;">
-                    <option value="both">Both Halves</option>
-                    <option value="1">First Half</option>
-                    <option value="2">Second Half</option>
-                </select>
-                <label for="timeFilter" style="margin-right: 10px; font-weight: bold;">Last X Minutes:</label>
-                <select id="timeFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="all">All</option>
-                    <option value="30">30 minutes</option>
-                    <option value="25">25 minutes</option>
-                    <option value="20">20 minutes</option>
-                    <option value="15">15 minutes</option>
-                    <option value="10">10 minutes</option>
-                    <option value="5">5 minutes</option>
-                </select>
-            </div>
-            <table class="summary-table" id="summaryTable">
-                <thead>
-                    <tr>
-                        <th onclick="sortSummary('number')">Number</th>
-                        <th onclick="sortSummary('name')">Name</th>
-                        <th onclick="sortSummary('possessions')">Possessions</th>
-                    </tr>
-                </thead>
-                <tbody id="summaryTableBody">
-                </tbody>
-            </table>
+    <!-- Panel overlay background -->
+    <div class="panel-overlay" id="panelOverlay"></div>
+    
+    <!-- Summary side panel -->
+    <div class="side-panel summary-panel" id="summaryPanel">
+        <span class="close-panel" id="closeSummary">&times;</span>
+        <h2>Possession Summary</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="halfFilter" style="margin-right: 10px; font-weight: bold;">Filter by Half:</label>
+            <select id="halfFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 20px;">
+                <option value="both">Both Halves</option>
+                <option value="1">First Half</option>
+                <option value="2">Second Half</option>
+            </select>
+            <label for="timeFilter" style="margin-right: 10px; font-weight: bold;">Last X Minutes:</label>
+            <select id="timeFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="all">All</option>
+                <option value="30">30 minutes</option>
+                <option value="25">25 minutes</option>
+                <option value="20">20 minutes</option>
+                <option value="15">15 minutes</option>
+                <option value="10">10 minutes</option>
+                <option value="5">5 minutes</option>
+            </select>
         </div>
+        <table class="summary-table" id="summaryTable">
+            <thead>
+                <tr>
+                    <th onclick="sortSummary('number')">Number</th>
+                    <th onclick="sortSummary('name')">Name</th>
+                    <th onclick="sortSummary('possessions')">Possessions</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+            </tbody>
+        </table>
     </div>
-    <div class="manage-players-modal" id="managePlayersModal">
-        <div class="manage-players-content">
-            <span class="close-summary" id="closeManagePlayers">&times;</span>
-            <h2>Manage Players</h2>
-            <table class="players-table" id="playersTable">
-                <thead>
-                    <tr>
-                        <th>Number</th>
-                        <th>Name</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="playersTableBody">
-                </tbody>
-            </table>
-            <div style="margin-top: 20px; text-align: center;">
-                <button class="add-player-btn" onclick="addPlayer()">Add New Player</button>
-                <button class="save-players-btn" id="savePlayersBtn">Save Changes</button>
-            </div>
+    
+    <!-- Manage Players side panel -->
+    <div class="side-panel manage-players-panel" id="managePlayersPanel">
+        <span class="close-panel" id="closeManagePlayers">&times;</span>
+        <h2>Manage Players</h2>
+        <table class="players-table" id="playersTable">
+            <thead>
+                <tr>
+                    <th>Number</th>
+                    <th>Name</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="playersTableBody">
+            </tbody>
+        </table>
+        <div style="margin-top: 20px; text-align: center;">
+            <button class="add-player-btn" onclick="addPlayer()">Add New Player</button>
+            <button class="save-players-btn" id="savePlayersBtn">Save Changes</button>
         </div>
     </div>
     <div class="set-time-modal" id="setTimeModal">
@@ -429,6 +571,7 @@
             btn.className = index < 15 ? 'player-btn' : 'player-btn substitute';
             btn.draggable = true;
             btn.dataset.playerIndex = index;
+            btn.dataset.playerNumber = player.number;
             btn.innerHTML = `
                 <div class="player-number">${player.number}</div>
                 <div class="player-name">${player.name}</div>
@@ -436,24 +579,37 @@
             
             // Add click handler for possession tracking
             btn.onclick = (e) => {
-                if (!e.target.closest('.player-btn').classList.contains('dragging')) {
+                if (!isDragging && !e.target.closest('.player-btn').classList.contains('dragging')) {
                     savePossession(player.number);
                 }
             };
             
-            // Add drag event listeners
+            // Add drag event listeners for desktop
             btn.addEventListener('dragstart', handleDragStart);
             btn.addEventListener('dragover', handleDragOver);
             btn.addEventListener('drop', handleDrop);
             btn.addEventListener('dragend', handleDragEnd);
+            
+            // Add touch event listeners for mobile
+            btn.addEventListener('touchstart', handleTouchStart, {passive: false});
+            btn.addEventListener('touchmove', handleTouchMove, {passive: false});
+            btn.addEventListener('touchend', handleTouchEnd);
             
             return btn;
         }
 
         // --- DRAG AND DROP FUNCTIONALITY ---
         let draggedElement = null;
+        let isDragging = false;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let longPressTimer = null;
+        
+        // For tracking touch positions
+        let lastTouch = null;
 
         function handleDragStart(e) {
+            isDragging = true;
             draggedElement = this;
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
@@ -489,6 +645,7 @@
             }
 
             this.classList.remove('drag-over');
+            isDragging = false;
             return false;
         }
 
@@ -498,6 +655,117 @@
             document.querySelectorAll('.player-btn').forEach(btn => {
                 btn.classList.remove('drag-over');
             });
+            isDragging = false;
+        }
+        
+        // Touch event handlers for mobile devices
+        function handleTouchStart(e) {
+            // Store the initial touch position
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                
+                // Set up long press detection for drag initiation
+                clearTimeout(longPressTimer);
+                
+                const element = this;
+                longPressTimer = setTimeout(() => {
+                    // Start drag mode after long press
+                    isDragging = true;
+                    draggedElement = element;
+                    element.classList.add('is-dragging');
+                    
+                    // Provide visual feedback
+                    navigator.vibrate && navigator.vibrate(50); // Vibration feedback if supported
+                    
+                }, 300); // 300ms for long press
+            }
+        }
+        
+        function handleTouchMove(e) {
+            if (!isDragging) {
+                // If not yet dragging, check if movement is significant enough to cancel long press
+                if (e.touches.length === 1) {
+                    const touchX = e.touches[0].clientX;
+                    const touchY = e.touches[0].clientY;
+                    
+                    // If moved more than 10px, cancel long press timer (normal scroll)
+                    if (Math.abs(touchX - touchStartX) > 10 || Math.abs(touchY - touchStartY) > 10) {
+                        clearTimeout(longPressTimer);
+                    }
+                }
+                return;
+            }
+            
+            // Prevent page scrolling while dragging
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                lastTouch = e.touches[0];
+                
+                // Find element under the touch point
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                
+                // Remove drag-over class from all elements
+                document.querySelectorAll('.player-btn').forEach(btn => {
+                    btn.classList.remove('drag-over');
+                });
+                
+                // Find the element under the touch point
+                const elemUnderTouch = document.elementFromPoint(touchX, touchY);
+                const playerBtnUnderTouch = elemUnderTouch?.closest('.player-btn');
+                
+                if (playerBtnUnderTouch && playerBtnUnderTouch !== draggedElement) {
+                    playerBtnUnderTouch.classList.add('drag-over');
+                }
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            // Clear the long press timer
+            clearTimeout(longPressTimer);
+            
+            // If not in dragging mode, this is a normal tap
+            if (!isDragging) {
+                return;
+            }
+            
+            // Find the element where the touch ended
+            let dropTarget = null;
+            
+            if (lastTouch) {
+                const elemUnderTouch = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
+                dropTarget = elemUnderTouch?.closest('.player-btn');
+            }
+            
+            // If we found a valid drop target
+            if (dropTarget && dropTarget !== draggedElement) {
+                const draggedIndex = parseInt(draggedElement.dataset.playerIndex);
+                const targetIndex = parseInt(dropTarget.dataset.playerIndex);
+                
+                // Swap players in the array
+                [players[draggedIndex], players[targetIndex]] = [players[targetIndex], players[draggedIndex]];
+                
+                // Save the new order
+                savePlayers();
+                
+                // Re-render the players
+                renderPlayers();
+            }
+            
+            // Clean up
+            if (draggedElement) {
+                draggedElement.classList.remove('is-dragging');
+            }
+            
+            document.querySelectorAll('.player-btn').forEach(btn => {
+                btn.classList.remove('drag-over');
+            });
+            
+            isDragging = false;
+            draggedElement = null;
+            lastTouch = null;
         }
         // --- DOWNLOAD DATA ---
         function downloadData() {
@@ -527,7 +795,13 @@
             // Reset time filter to "all" every time summary is opened
             document.getElementById('timeFilter').value = 'all';
             renderSummaryTable();
-            document.getElementById('summaryModal').style.display = 'flex';
+            
+            // Hide manage players panel if open
+            document.getElementById('managePlayersPanel').classList.remove('active');
+            
+            // Show summary panel
+            document.getElementById('summaryPanel').classList.add('active');
+            document.getElementById('panelOverlay').classList.add('active');
         }
 
         function renderSummaryTable() {
@@ -641,17 +915,25 @@
         }
 
         function hideSummary() {
-            document.getElementById('summaryModal').style.display = 'none';
+            document.getElementById('summaryPanel').classList.remove('active');
+            document.getElementById('panelOverlay').classList.remove('active');
         }
 
         // --- PLAYER MANAGEMENT ---
         function showManagePlayers() {
             renderPlayerManagement();
-            document.getElementById('managePlayersModal').style.display = 'flex';
+            
+            // Hide summary panel if open
+            document.getElementById('summaryPanel').classList.remove('active');
+            
+            // Show manage players panel
+            document.getElementById('managePlayersPanel').classList.add('active');
+            document.getElementById('panelOverlay').classList.add('active');
         }
 
         function hideManagePlayers() {
-            document.getElementById('managePlayersModal').style.display = 'none';
+            document.getElementById('managePlayersPanel').classList.remove('active');
+            document.getElementById('panelOverlay').classList.remove('active');
         }
 
         function renderPlayerManagement() {
@@ -683,12 +965,20 @@
                 
                 tbody.appendChild(row);
             });
+            
+            // Add touch support for mobile devices
+            setTimeout(enhanceTableRowsWithTouchEvents, 0); // Use setTimeout to ensure DOM is ready
         }
         
         // --- TABLE DRAG AND DROP FUNCTIONALITY ---
         let draggedTableRow = null;
+        let tableTouchStartY = 0;
+        let tableLongPressTimer = null;
+        let isTableDragging = false;
+        let lastTableTouch = null;
 
         function handleTableDragStart(e) {
+            isTableDragging = true;
             draggedTableRow = this;
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
@@ -722,6 +1012,7 @@
             }
 
             this.classList.remove('drag-over');
+            isTableDragging = false;
             return false;
         }
 
@@ -731,6 +1022,127 @@
             document.querySelectorAll('.players-table tr').forEach(row => {
                 row.classList.remove('drag-over');
             });
+            isTableDragging = false;
+        }
+        
+        // Add touch support for table rows in player management
+        function enhanceTableRowsWithTouchEvents() {
+            document.querySelectorAll('.players-table tbody tr').forEach(row => {
+                row.addEventListener('touchstart', handleTableTouchStart, {passive: false});
+                row.addEventListener('touchmove', handleTableTouchMove, {passive: false});
+                row.addEventListener('touchend', handleTableTouchEnd);
+            });
+        }
+        
+        function handleTableTouchStart(e) {
+            // Only proceed if touching the row itself, not an input field
+            if (e.target.tagName.toLowerCase() === 'input') {
+                return;
+            }
+            
+            // Store start position
+            if (e.touches.length === 1) {
+                tableTouchStartY = e.touches[0].clientY;
+                
+                // Set up long press detection
+                clearTimeout(tableLongPressTimer);
+                
+                const row = this;
+                tableLongPressTimer = setTimeout(() => {
+                    // Start drag mode after long press
+                    isTableDragging = true;
+                    draggedTableRow = row;
+                    row.classList.add('dragging');
+                    
+                    // Provide haptic feedback if available
+                    navigator.vibrate && navigator.vibrate(50);
+                    
+                }, 300); // 300ms for long press
+            }
+        }
+        
+        function handleTableTouchMove(e) {
+            if (!isTableDragging) {
+                // If not dragging, check if movement is significant to cancel long press
+                if (e.touches.length === 1) {
+                    const touchY = e.touches[0].clientY;
+                    
+                    // If moved more than 10px vertically, cancel long press (normal scroll)
+                    if (Math.abs(touchY - tableTouchStartY) > 10) {
+                        clearTimeout(tableLongPressTimer);
+                    }
+                }
+                return;
+            }
+            
+            // Prevent scrolling while dragging
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                lastTableTouch = e.touches[0];
+                
+                // Find element under touch point
+                const touchY = e.touches[0].clientY;
+                
+                // Remove drag-over class from all rows
+                document.querySelectorAll('.players-table tr').forEach(row => {
+                    row.classList.remove('drag-over');
+                });
+                
+                // Find the row under the touch point
+                const elemUnderTouch = document.elementFromPoint(e.touches[0].clientX, touchY);
+                const rowUnderTouch = elemUnderTouch?.closest('tr');
+                
+                if (rowUnderTouch && rowUnderTouch !== draggedTableRow) {
+                    rowUnderTouch.classList.add('drag-over');
+                }
+            }
+        }
+        
+        function handleTableTouchEnd(e) {
+            // Clear the long press timer
+            clearTimeout(tableLongPressTimer);
+            
+            // If not in dragging mode, this is a normal tap
+            if (!isTableDragging) {
+                return;
+            }
+            
+            // Find the row where touch ended
+            let dropTarget = null;
+            
+            if (lastTableTouch) {
+                const elemUnderTouch = document.elementFromPoint(lastTableTouch.clientX, lastTableTouch.clientY);
+                dropTarget = elemUnderTouch?.closest('tr');
+            }
+            
+            // If we found a valid drop target
+            if (dropTarget && dropTarget !== draggedTableRow && dropTarget.dataset.playerIndex !== undefined) {
+                const draggedIndex = parseInt(draggedTableRow.dataset.playerIndex);
+                const targetIndex = parseInt(dropTarget.dataset.playerIndex);
+                
+                // Move player to new position
+                const movedPlayer = players.splice(draggedIndex, 1)[0];
+                players.splice(targetIndex, 0, movedPlayer);
+                
+                // Re-render with new order
+                renderPlayerManagement();
+                // Re-add touch events after re-rendering
+                enhanceTableRowsWithTouchEvents();
+            }
+            
+            // Clean up
+            if (draggedTableRow) {
+                draggedTableRow.classList.remove('dragging');
+            }
+            
+            document.querySelectorAll('.players-table tr').forEach(row => {
+                row.classList.remove('drag-over');
+            });
+            
+            isTableDragging = false;
+            draggedTableRow = null;
+            lastTableTouch = null;
         }
 
         function addPlayer() {
@@ -819,15 +1231,31 @@
             }
         });
         
+        // Handle overlay click to close panels
+        document.getElementById('panelOverlay').onclick = function() {
+            hideSummary();
+            hideManagePlayers();
+        };
+        
         window.onclick = function(event) {
-            if (event.target === document.getElementById('summaryModal')) hideSummary();
-            if (event.target === document.getElementById('managePlayersModal')) hideManagePlayers();
             if (event.target === document.getElementById('setTimeModal')) hideSetTimeModal();
         };
         // --- INIT ---
         loadPlayers();
         renderPlayers();
         updateTimerDisplay();
+        
+        // Set a flag to show drag tips only on first page load
+        if (!localStorage.getItem('tips-shown')) {
+            localStorage.setItem('tips-shown', 'true');
+        } else {
+            document.body.classList.add('tips-shown');
+        }
+        
+        // Add iOS detection
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+            document.body.classList.add('ios-device');
+        }
     </script>
 </body>
 </html>
