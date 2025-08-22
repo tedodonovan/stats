@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Fossa Tracker">
-    <meta name="format-detection" content="telephone=no"
-    <title>Fossa Possession Tracker</title>
+    <meta name="apple-mobile-web-app-title" content="GAA Tracker">
+    <meta name="format-detection" content="telephone=no">
+    <title>GAA Possession Tracker</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 30px; background: #f7f7f7; }
         h1 { text-align: center; }
@@ -23,8 +23,8 @@
         .column-4 { grid-column: 4; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .column-5 { grid-column: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .column-6 { grid-column: 6; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .substitutes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
-        .player-btn { padding: 8px 10px; font-size: 1em; border-radius: 8px; border: none; background: #1976d2; color: #fff; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; height: 80px; position: relative; box-sizing: border-box; }
+        .substitutes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; max-width: 1050px; margin-left: auto; margin-right: auto; }
+        .player-btn { padding: 8px 10px; font-size: 1em; border-radius: 8px; border: none; background: #1976d2; color: #fff; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 135px; height: 80px; position: relative; box-sizing: border-box; }
         .player-btn:hover { background: #1565c0; transform: scale(1.02); }
         .player-btn.clicked { background: #4caf50; border: 2px solid #2e7d32; box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
         .player-btn.clicked:hover { background: #45a049; }
@@ -159,8 +159,8 @@
         @media (max-width: 1024px) and (min-width: 601px) {
             /* iPad-specific styles */
             .players { max-width: 95%; }
-            .substitutes { max-width: 95%; }
-            .player-btn { width: 120px; height: 70px; font-size: 0.9em; }
+            .substitutes { max-width: 98%; }
+            .player-btn { width: 115px; height: 70px; font-size: 0.9em; }
             .player-number { font-size: 1.2em; }
             .player-name { font-size: 0.8em; }
             
@@ -270,7 +270,7 @@
     </style>
 </head>
 <body>
-    <h1>Fossa Possession Tracker</h1>
+    <h1>GAA Possession Tracker</h1>
     <div class="timer-section">
         <div class="timer-controls">
             <button id="startBtn">Start</button>
@@ -527,7 +527,7 @@
                     // Add empty spacer div
                     const spacer = document.createElement('div');
                     spacer.style.height = '80px'; // Same height as player button
-                    spacer.style.width = '140px'; // Same width as player button
+                    spacer.style.width = '135px'; // Same width as player button
                     container.appendChild(spacer);
                 }
                 
@@ -542,7 +542,7 @@
             // Handle substitutes (>15) in rows of max 6
             let subsRowContainer = null;
             let subsInCurrentRow = 0;
-            const maxSubsPerRow = 6;
+            const maxSubsPerRow = 7;
             
             for (let i = 15; i < players.length; i++) {
                 if (subsInCurrentRow === 0) {
