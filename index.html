@@ -558,20 +558,26 @@
 
         // Team tracking variables
         let isHomeTeam = true; // True for home team, false for opposition team
-        let homePlayers = [...defaultHomePlayers];
-        let oppositionPlayers = [...defaultOppositionPlayers];
-        let players = homePlayers; // Active players list
+        let homePlayers = [];
+        let oppositionPlayers = [];
+        let players = []; // Active players list
 
         // Load players from localStorage if available
         function loadPlayers() {
             const savedHomePlayers = localStorage.getItem('homePlayers');
             if (savedHomePlayers) {
                 homePlayers = JSON.parse(savedHomePlayers);
+            } else {
+                // Only use defaults if no saved data exists
+                homePlayers = [...defaultHomePlayers];
             }
             
             const savedOppositionPlayers = localStorage.getItem('oppositionPlayers');
             if (savedOppositionPlayers) {
                 oppositionPlayers = JSON.parse(savedOppositionPlayers);
+            } else {
+                // Only use defaults if no saved data exists
+                oppositionPlayers = [...defaultOppositionPlayers];
             }
             
             // Set the active players based on current team
@@ -597,6 +603,9 @@
             
             // Toggle the team flag
             isHomeTeam = !isHomeTeam;
+            
+            // Save the active team state to localStorage
+            localStorage.setItem('activeTeam', isHomeTeam ? 'home' : 'opposition');
             
             // Update active players list
             players = isHomeTeam ? homePlayers : oppositionPlayers;
@@ -1282,6 +1291,9 @@
                 const movedPlayer = players.splice(draggedIndex, 1)[0];
                 players.splice(targetIndex, 0, movedPlayer);
                 
+                // Save the new order to localStorage
+                savePlayers();
+                
                 // Re-render the table with new order
                 renderPlayerManagement();
             }
@@ -1400,6 +1412,9 @@
                 const movedPlayer = players.splice(draggedIndex, 1)[0];
                 players.splice(targetIndex, 0, movedPlayer);
                 
+                // Save the new order to localStorage
+                savePlayers();
+                
                 // Re-render with new order
                 renderPlayerManagement();
                 // Re-add touch events after re-rendering
@@ -1434,6 +1449,9 @@
                 name: `Player ${nextNumber}`
             });
             
+            // Save players to localStorage after adding
+            savePlayers();
+            
             renderPlayerManagement();
         }
 
@@ -1445,6 +1463,10 @@
             
             if (confirm(`Are you sure you want to remove ${players[index].name}?`)) {
                 players.splice(index, 1);
+                
+                // Save players to localStorage after removing
+                savePlayers();
+                
                 renderPlayerManagement();
             }
         }
@@ -1517,11 +1539,18 @@
             if (event.target === document.getElementById('setTimeModal')) hideSetTimeModal();
         };
         // --- INIT ---
-        // Set initial team styling
-        document.body.classList.add('home-team');
+        // Load active team from localStorage if available
+        const savedActiveTeam = localStorage.getItem('activeTeam');
+        if (savedActiveTeam) {
+            isHomeTeam = savedActiveTeam === 'home';
+        }
+        
+        // Set initial team styling based on the active team
+        document.body.classList.add(isHomeTeam ? 'home-team' : 'opposition-team');
         
         // Migrate data from old storage format if needed
         (function migrateData() {
+            // Migrate possession data
             const oldPossessions = localStorage.getItem('possessions');
             if (oldPossessions) {
                 // If we have old-format data but no team-specific data yet
@@ -1535,10 +1564,53 @@
                     localStorage.removeItem('possessions');
                 }
             }
+            
+            // Migrate player data if needed
+            const oldPlayers = localStorage.getItem('players');
+            if (oldPlayers) {
+                // If we have old-format player data but no team-specific player data yet
+                if (!localStorage.getItem('homePlayers')) {
+                    // Assume all old player data belongs to home team
+                    localStorage.setItem('homePlayers', oldPlayers);
+                    console.log('Migrated existing player data to home team');
+                    
+                    // Keep old data as backup but rename it
+                    localStorage.setItem('players_backup', oldPlayers);
+                    localStorage.removeItem('players');
+                }
+            }
         })();
         
         // Load players and render the app
         loadPlayers();
+        
+        // Log player data for debugging
+        console.log('Loaded home players:', homePlayers);
+        console.log('Loaded opposition players:', oppositionPlayers);
+        
+        // Ensure players are saved to localStorage (creates initial storage if not present)
+        savePlayers();
+        
+        // Log saved data
+        console.log('Active team:', isHomeTeam ? 'Home' : 'Opposition');
+        console.log('Active players:', players);
+        
+        // Update toggle button UI to match active team
+        const toggleBtn = document.getElementById('teamToggleBtn');
+        const teamIndicator = document.getElementById('activeTeamIndicator');
+        
+        if (isHomeTeam) {
+            toggleBtn.classList.add('home-active');
+            toggleBtn.classList.remove('opposition-active');
+            toggleBtn.textContent = 'Home Team';
+            teamIndicator.textContent = 'Home Team Active';
+        } else {
+            toggleBtn.classList.add('opposition-active');
+            toggleBtn.classList.remove('home-active');
+            toggleBtn.textContent = 'Opposition Team';
+            teamIndicator.textContent = 'Opposition Team Active';
+        }
+        
         renderPlayers();
         updateTimerDisplay();
         
