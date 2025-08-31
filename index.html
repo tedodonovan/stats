@@ -27,7 +27,7 @@
         .timer { font-size: 2em; }
         .timer-controls button { padding: 8px 15px; font-size: 0.9em; border-radius: 6px; border: none; background: #ff9800; color: #fff; cursor: pointer; transition: background 0.2s; margin: 0 5px; }
         .timer-controls button:hover { background: #f57c00; }
-        .halves { text-align: center; margin-bottom: 20px; }
+        .halves { text-align: center; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .players { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
         .column-1 { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .column-2 { grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -36,14 +36,66 @@
         .column-5 { grid-column: 5; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .column-6 { grid-column: 6; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .substitutes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; max-width: 1050px; margin-left: auto; margin-right: auto; }
-        .player-btn { padding: 8px 10px; font-size: 1em; border-radius: 8px; border: none; background: #1976d2; color: #fff; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 135px; height: 80px; position: relative; box-sizing: border-box; }
-        .player-btn:hover { background: #1565c0; transform: scale(1.02); }
-        .player-btn.clicked { background: #4caf50; border: 2px solid #2e7d32; box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
-        .player-btn.clicked:hover { background: #45a049; }
-        .player-btn.substitute { background: #ffc107; color: #000; }
-        .player-btn.substitute:hover { background: #ffb300; }
-        .player-btn.substitute.clicked { background: #8bc34a; color: #fff; border: 2px solid #689f38; box-shadow: 0 0 10px rgba(139, 195, 74, 0.5); }
-        .player-btn.substitute.clicked:hover { background: #7cb342; }
+        /* Team color variables */
+        :root {
+            /* Home team colors (red & black) */
+            --home-primary: #d32f2f;
+            --home-primary-hover: #b71c1c;
+            --home-clicked: #000000;
+            --home-clicked-hover: #212121;
+            --home-sub: #ff5252;
+            --home-sub-hover: #ff1744;
+            --home-sub-clicked: #9e9e9e;
+            --home-sub-clicked-hover: #757575;
+            
+            /* Opposition team colors (blue & yellow) */
+            --opposition-primary: #1976d2;
+            --opposition-primary-hover: #1565c0;
+            --opposition-clicked: #ffc107;
+            --opposition-clicked-hover: #ffb300;
+            --opposition-sub: #42a5f5;
+            --opposition-sub-hover: #2196f3;
+            --opposition-sub-clicked: #ffca28;
+            --opposition-sub-clicked-hover: #ffb300;
+        }
+        
+        /* Base player button styles */
+        .player-btn { 
+            padding: 8px 10px; 
+            font-size: 1em; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            width: 135px; 
+            height: 80px; 
+            position: relative; 
+            box-sizing: border-box;
+        }
+        
+        /* Home team colors */
+        body.home-team .player-btn { background: var(--home-primary); color: #fff; }
+        body.home-team .player-btn:hover { background: var(--home-primary-hover); transform: scale(1.02); }
+        body.home-team .player-btn.clicked { background: var(--home-clicked); border: 2px solid #000000; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+        body.home-team .player-btn.clicked:hover { background: var(--home-clicked-hover); }
+        body.home-team .player-btn.substitute { background: var(--home-sub); color: #fff; }
+        body.home-team .player-btn.substitute:hover { background: var(--home-sub-hover); }
+        body.home-team .player-btn.substitute.clicked { background: var(--home-sub-clicked); color: #fff; border: 2px solid #424242; box-shadow: 0 0 10px rgba(158, 158, 158, 0.5); }
+        body.home-team .player-btn.substitute.clicked:hover { background: var(--home-sub-clicked-hover); }
+        
+        /* Opposition team colors */
+        body.opposition-team .player-btn { background: var(--opposition-primary); color: #fff; }
+        body.opposition-team .player-btn:hover { background: var(--opposition-primary-hover); transform: scale(1.02); }
+        body.opposition-team .player-btn.clicked { background: var(--opposition-clicked); color: #000; border: 2px solid #ffa000; box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); }
+        body.opposition-team .player-btn.clicked:hover { background: var(--opposition-clicked-hover); }
+        body.opposition-team .player-btn.substitute { background: var(--opposition-sub); color: #fff; }
+        body.opposition-team .player-btn.substitute:hover { background: var(--opposition-sub-hover); }
+        body.opposition-team .player-btn.substitute.clicked { background: var(--opposition-sub-clicked); color: #000; border: 2px solid #ffa000; box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); }
+        body.opposition-team .player-btn.substitute.clicked:hover { background: var(--opposition-sub-clicked-hover); }
         .player-btn.dragging { opacity: 0.5; transform: rotate(5deg); }
         .player-btn.drag-over { border: 3px dashed #333; }
         .player-number { font-size: 1.3em; font-weight: bold; margin-bottom: 2px; line-height: 1.1; }
@@ -94,6 +146,76 @@
         
         .panel-overlay.active {
             display: block;
+        }
+        
+        /* Team toggle styling */
+        .team-toggle-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            margin-right: 15px;
+            vertical-align: middle;
+            min-width: 110px; /* Match the minimum width of the button */
+        }
+        
+        .team-toggle-btn {
+            padding: 8px 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            vertical-align: middle;
+            width: calc(100% - 20px); /* Double the length by using percentage width */
+            min-width: 110px; /* Ensure minimum width */
+        }
+        
+        .team-toggle-btn.home-active {
+            background: linear-gradient(to right, var(--home-primary), var(--home-primary-hover));
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .team-toggle-btn.opposition-active {
+            background: linear-gradient(to right, var(--opposition-primary), var(--opposition-primary-hover));
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .team-toggle-btn:after {
+            content: '⟲ Switch to Opposition Team';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(100%);
+            transition: transform 0.2s ease;
+            font-size: 0.9em;
+        }
+        
+        .team-toggle-btn.opposition-active:after {
+            content: '⟲ Switch to Home Team';
+        }
+        
+        .team-toggle-btn:hover:after {
+            transform: translateY(0);
+        }
+        
+        .active-team {
+            font-size: 0.7em;
+            margin-top: 3px;
+            color: #555;
+            font-style: italic;
+            text-align: center;
         }
         
         .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9em; }
@@ -289,6 +411,7 @@
 </head>
 <body>
     <div id="main-content">
+    
     <div class="timer-section">
         <div class="timer-controls">
             <button id="startBtn">Start</button>
@@ -301,6 +424,11 @@
         </div>
     </div>
     <div class="halves">
+        <!-- Team Toggle Button -->
+        <div class="team-toggle-container">
+            <button id="teamToggleBtn" class="team-toggle-btn home-active">Home Team</button>
+            <div id="activeTeamIndicator" class="active-team">Home Team Active</div>
+        </div>
         <button id="firstHalfBtn">First Half</button>
         <button id="secondHalfBtn">Second Half</button>
         <span id="currentHalf">Current Half: 1</span>
@@ -327,7 +455,7 @@
     <!-- Summary side panel -->
     <div class="side-panel summary-panel" id="summaryPanel">
         <span class="close-panel" id="closeSummary">&times;</span>
-        <h2>Possession Summary</h2>
+        <h2 id="summaryTitle">Home Team Summary</h2>
         <div style="margin-bottom: 15px;">
             <label for="halfFilter" style="margin-right: 10px; font-weight: bold;">Filter by Half:</label>
             <select id="halfFilter" onchange="renderSummaryTable()" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin-right: 20px;">
@@ -391,7 +519,8 @@
     </div>
     <script>
         // --- CONFIG ---
-        let players = [
+        // Define default player lists for home and opposition teams
+        const defaultHomePlayers = [
             { number: 1, name: "Player 1" },
             { number: 2, name: "Player 2" },
             { number: 3, name: "Player 3" },
@@ -408,18 +537,93 @@
             { number: 14, name: "Player 14" },
             { number: 15, name: "Player 15" }
         ];
+        
+        const defaultOppositionPlayers = [
+            { number: 1, name: "Opp 1" },
+            { number: 2, name: "Opp 2" },
+            { number: 3, name: "Opp 3" },
+            { number: 4, name: "Opp 4" },
+            { number: 5, name: "Opp 5" },
+            { number: 6, name: "Opp 6" },
+            { number: 7, name: "Opp 7" },
+            { number: 8, name: "Opp 8" },
+            { number: 9, name: "Opp 9" },
+            { number: 10, name: "Opp 10" },
+            { number: 11, name: "Opp 11" },
+            { number: 12, name: "Opp 12" },
+            { number: 13, name: "Opp 13" },
+            { number: 14, name: "Opp 14" },
+            { number: 15, name: "Opp 15" }
+        ];
+
+        // Team tracking variables
+        let isHomeTeam = true; // True for home team, false for opposition team
+        let homePlayers = [...defaultHomePlayers];
+        let oppositionPlayers = [...defaultOppositionPlayers];
+        let players = homePlayers; // Active players list
 
         // Load players from localStorage if available
         function loadPlayers() {
-            const savedPlayers = localStorage.getItem('players');
-            if (savedPlayers) {
-                players = JSON.parse(savedPlayers);
+            const savedHomePlayers = localStorage.getItem('homePlayers');
+            if (savedHomePlayers) {
+                homePlayers = JSON.parse(savedHomePlayers);
             }
+            
+            const savedOppositionPlayers = localStorage.getItem('oppositionPlayers');
+            if (savedOppositionPlayers) {
+                oppositionPlayers = JSON.parse(savedOppositionPlayers);
+            }
+            
+            // Set the active players based on current team
+            players = isHomeTeam ? homePlayers : oppositionPlayers;
         }
 
         // Save players to localStorage
         function savePlayers() {
-            localStorage.setItem('players', JSON.stringify(players));
+            // Update the appropriate team's players array
+            if (isHomeTeam) {
+                homePlayers = [...players];
+                localStorage.setItem('homePlayers', JSON.stringify(homePlayers));
+            } else {
+                oppositionPlayers = [...players];
+                localStorage.setItem('oppositionPlayers', JSON.stringify(oppositionPlayers));
+            }
+        }
+        
+        // Toggle between home and opposition teams
+        function toggleTeam() {
+            // Save current team data before switching
+            savePlayers();
+            
+            // Toggle the team flag
+            isHomeTeam = !isHomeTeam;
+            
+            // Update active players list
+            players = isHomeTeam ? homePlayers : oppositionPlayers;
+            
+            // Update UI to reflect the active team
+            const body = document.body;
+            const toggleBtn = document.getElementById('teamToggleBtn');
+            const teamIndicator = document.getElementById('activeTeamIndicator');
+            
+            if (isHomeTeam) {
+                body.classList.add('home-team');
+                body.classList.remove('opposition-team');
+                toggleBtn.classList.add('home-active');
+                toggleBtn.classList.remove('opposition-active');
+                toggleBtn.textContent = 'Home Team';
+                teamIndicator.textContent = 'Home Team Active';
+            } else {
+                body.classList.add('opposition-team');
+                body.classList.remove('home-team');
+                toggleBtn.classList.add('opposition-active');
+                toggleBtn.classList.remove('home-active');
+                toggleBtn.textContent = 'Opposition Team';
+                teamIndicator.textContent = 'Opposition Team Active';
+            }
+            
+            // Re-render the players for the active team
+            renderPlayers();
         }
         // --- TIMER ---
         let timer = 0;
@@ -495,10 +699,20 @@
         function savePossession(jersey) {
             const now = new Date();
             const time = now.toISOString();
-            const data = { time, jersey, half: currentHalf, timer: timer };
-            let possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            // Include team information in the possession data
+            const data = { 
+                time, 
+                jersey, 
+                half: currentHalf, 
+                timer: timer,
+                team: isHomeTeam ? 'home' : 'opposition'
+            };
+            
+            // Get appropriate possession storage based on team
+            const storageKey = isHomeTeam ? 'homePossessions' : 'oppositionPossessions';
+            let possessions = JSON.parse(localStorage.getItem(storageKey) || '[]');
             possessions.push(data);
-            localStorage.setItem('possessions', JSON.stringify(possessions));
+            localStorage.setItem(storageKey, JSON.stringify(possessions));
             
             // Add visual feedback - find the button and add clicked class
             const allButtons = document.querySelectorAll('.player-btn');
@@ -788,16 +1002,38 @@
         }
         // --- DOWNLOAD DATA ---
         function downloadData() {
-            const possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
-            let csv = 'timestamp,jersey,half,timer\n';
+            // Create dialog with options to download specific team data or both
+            const teamType = confirm('Do you want to download data for both teams?\nClick OK for both teams, or Cancel for current team only.');
+            
+            let possessions = [];
+            let filename = '';
+            
+            if (teamType) {
+                // Download both teams' data
+                const homePossessions = JSON.parse(localStorage.getItem('homePossessions') || '[]');
+                const oppositionPossessions = JSON.parse(localStorage.getItem('oppositionPossessions') || '[]');
+                possessions = [...homePossessions, ...oppositionPossessions];
+                filename = 'all_possessions.csv';
+            } else {
+                // Download current team data only
+                const storageKey = isHomeTeam ? 'homePossessions' : 'oppositionPossessions';
+                const teamName = isHomeTeam ? 'home' : 'opposition';
+                possessions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                filename = `${teamName}_possessions.csv`;
+            }
+            
+            // Create CSV with team information
+            let csv = 'timestamp,jersey,half,timer,team\n';
             possessions.forEach(d => {
-                csv += `${d.time},${d.jersey},${d.half},${d.timer}\n`;
+                const team = d.team || (d.team === undefined ? (isHomeTeam ? 'home' : 'opposition') : d.team);
+                csv += `${d.time},${d.jersey},${d.half},${d.timer},${team}\n`;
             });
+            
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'possessions.csv';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -827,9 +1063,17 @@
         }
 
         function renderSummaryTable() {
-            const possessions = JSON.parse(localStorage.getItem('possessions') || '[]');
+            // Get team-specific possessions based on active team
+            const storageKey = isHomeTeam ? 'homePossessions' : 'oppositionPossessions';
+            const possessions = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const halfFilter = document.getElementById('halfFilter').value;
             const timeFilter = document.getElementById('timeFilter').value;
+            
+            // Update title to show which team data is being displayed
+            const summaryTitle = document.getElementById('summaryTitle');
+            if (summaryTitle) {
+                summaryTitle.textContent = isHomeTeam ? 'Home Team Summary' : 'Opposition Team Summary';
+            }
             
             // Filter possessions by selected half
             let filteredPossessions = halfFilter === 'both' 
@@ -1233,9 +1477,12 @@
 
         // --- CLEAR POSSESSIONS ---
         function clearPossessions() {
-            if (confirm('Are you sure you want to clear all possession data? This cannot be undone.')) {
-                localStorage.removeItem('possessions');
-                alert('Possession data cleared!');
+            const teamType = isHomeTeam ? 'home' : 'opposition';
+            const storageKey = isHomeTeam ? 'homePossessions' : 'oppositionPossessions';
+            
+            if (confirm(`Are you sure you want to clear all ${teamType} team possession data? This cannot be undone.`)) {
+                localStorage.removeItem(storageKey);
+                alert(`${teamType.charAt(0).toUpperCase() + teamType.slice(1)} team possession data cleared!`);
             }
         }
         // --- EVENT LISTENERS ---
@@ -1254,6 +1501,7 @@
         document.getElementById('closeSummary').onclick = hideSummary;
         document.getElementById('closeManagePlayers').onclick = hideManagePlayers;
         document.getElementById('savePlayersBtn').onclick = savePlayerChanges;
+        document.getElementById('teamToggleBtn').onclick = toggleTeam;
         
         // Allow Enter key to confirm set time
         document.getElementById('setTimeInput').addEventListener('keypress', function(e) {
@@ -1269,6 +1517,27 @@
             if (event.target === document.getElementById('setTimeModal')) hideSetTimeModal();
         };
         // --- INIT ---
+        // Set initial team styling
+        document.body.classList.add('home-team');
+        
+        // Migrate data from old storage format if needed
+        (function migrateData() {
+            const oldPossessions = localStorage.getItem('possessions');
+            if (oldPossessions) {
+                // If we have old-format data but no team-specific data yet
+                if (!localStorage.getItem('homePossessions')) {
+                    // Assume all old possessions belong to home team
+                    localStorage.setItem('homePossessions', oldPossessions);
+                    console.log('Migrated existing possession data to home team');
+                    
+                    // Keep old data as backup but rename it
+                    localStorage.setItem('possessions_backup', oldPossessions);
+                    localStorage.removeItem('possessions');
+                }
+            }
+        })();
+        
+        // Load players and render the app
         loadPlayers();
         renderPlayers();
         updateTimerDisplay();
